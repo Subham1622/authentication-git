@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto8
+      docker: 18
+  pre_build:
+    commands:
+      - echo "Pre_build"
+      - echo "Logging in to Amazon ECR"
+      - $(aws ecr get-login  --no-include-email --region us-east-2)
+  build:
+    commands:
+      - echo "Build"
+      - echo "Entered build phase"
+      - echo "Building Java application"
+      - cd Authentication-MS
+      - mvn -DskipTests clean package
+      - docker build -t c10_pod-3-authentication-ms .
+      - docker tag c10_pod-3-authentication-ms:latest 860061945305.dkr.ecr.us-east-2.amazonaws.com/c10_pod-3-authentication-ms:latest
+
+  post_build:
+    commands:
+      - echo "Post_build"
+      - docker push 860061945305.dkr.ecr.us-east-2.amazonaws.com/c10_pod-3-authentication-ms:latest
+      - printf '[{"name":"authentication-ms","imageUri":"%s"}]' 860061945305.dkr.ecr.us-east-2.amazonaws.com/c10_pod-3-authentication-ms > taskdefinition.json
+      - cat taskdefinition.json
+
+artifacts:
+  files:
+      - authentication-ms/taskdefinition.json
